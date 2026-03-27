@@ -39,7 +39,7 @@ const swaggerOptions = {
             version: '1.0.0',
             description: 'API for processing and managing customer orders',
         },
-        servers: [{ url: 'http://localhost:8003' }],
+        servers: [{ url: 'http://localhost:8003' }, { url: 'http://localhost:8000/orders' }],
     },
     apis: ['./index.js'],
 };

@@ -37,7 +37,7 @@ const swaggerOptions = {
             version: '1.0.0',
             description: 'API for managing user registration and profiles',
         },
-        servers: [{ url: 'http://localhost:8001' }],
+        servers: [{ url: 'http://localhost:8001' }, { url: 'http://localhost:8000/users' }],
     },
     apis: ['./index.js'],
 };

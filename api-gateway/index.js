@@ -36,10 +36,8 @@ services.forEach(({ path, target }) => {
     app.use(path, createProxyMiddleware({
         target,
         changeOrigin: true,
-        // pathRewrite removes the prefix (e.g., /products) before sending to the service
-        pathRewrite: {
-            [`^${path}`]: '',
-        },
+        // pathRewrite is removed so microservices receive the full path (e.g., /users/register)
+        // which matches their internal routing.
         onProxyReq: (proxyReq, req, res) => {
             console.log(`[Gateway]: Routing ${req.method} request from ${req.originalUrl} to ${target}`);
         },

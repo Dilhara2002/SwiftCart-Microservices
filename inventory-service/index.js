@@ -35,7 +35,7 @@ const swaggerOptions = {
             version: '1.0.0',
             description: 'API for managing product stock and warehouse levels',
         },
-        servers: [{ url: 'http://localhost:8004' }],
+        servers: [{ url: 'http://localhost:8004' }, { url: 'http://localhost:8000/inventory' }],
     },
     apis: ['./index.js'],
 };
