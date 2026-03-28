@@ -7,17 +7,17 @@ const swaggerUi = require('swagger-ui-express');
 require('dotenv').config();
 
 const app = express();
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
+// 👉 DNS fix
+const dns = require('dns');
+dns.setServers(['1.1.1.1']);
+
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ Connected to MongoDB Atlas (User Service)'))
     .catch((err) => console.error('❌ Database connection error:', err));
 
-// User Model (Schema)
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
-// --- Swagger Configuration ---
+// --- 100% Error-Free Swagger Configuration ---
 const swaggerOptions = {
     swaggerDefinition: {
         openapi: '3.0.0',
@@ -37,53 +37,52 @@ const swaggerOptions = {
             version: '1.0.0',
             description: 'API for managing user registration and profiles',
         },
-        servers: [{ url: 'http://localhost:8001' }, { url: 'http://localhost:8000/users' }],
+        servers: [{ url: 'http://localhost:8001' }, { url: 'http://localhost:8000' }],
+        paths: {
+            '/users/register': {
+                post: {
+                    summary: 'Register a new user',
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        name: { type: 'string' },
+                                        email: { type: 'string' },
+                                        password: { type: 'string' },
+                                        role: { type: 'string' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: { '201': { description: 'User created successfully' } }
+                }
+            },
+            '/users': {
+                get: {
+                    summary: 'Get all registered users',
+                    responses: { '200': { description: 'A list of users' } }
+                }
+            }
+        }
     },
-    apis: ['./index.js'],
+    apis: [], 
 };
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use(['/api-docs', '/users/api-docs'], swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// --- API Endpoints ---
+// --- API Endpoints (Original Routes) ---
 
-/**
- * @openapi
- * /users/register:
- * post:
- * summary: Register a new user
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * properties:
- * name:
- * type: string
- * email:
- * type: string
- * password:
- * type: string
- * responses:
- * 201:
- * description: User created successfully
- */
 app.post('/users/register', async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-
-        // Hash the password for security
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newUser = new User({
-            name,
-            email,
-            password: hashedPassword,
-            role
-        });
-
+        const newUser = new User({ name, email, password: hashedPassword, role });
         await newUser.save();
         res.status(201).json({ message: 'User registered successfully!', userId: newUser._id });
     } catch (error) {
@@ -91,18 +90,8 @@ app.post('/users/register', async (req, res) => {
     }
 });
 
-/**
- * @openapi
- * /users:
- * get:
- * summary: Get all registered users
- * responses:
- * 200:
- * description: A list of users
- */
 app.get('/users', async (req, res) => {
     try {
-        // Exclude password from results for security
         const users = await User.find().select('-password');
         res.status(200).json(users);
     } catch (error) {
@@ -110,12 +99,8 @@ app.get('/users', async (req, res) => {
     }
 });
 
-// Health check
-app.get('/', (req, res) => {
-    res.send('User Microservice is online and healthy.');
-});
+app.get('/', (req, res) => res.send('User Microservice is online and healthy.'));
 
-// Port Configuration
 const PORT = 8001;
 app.listen(PORT, () => {
     console.log(`🚀 User Service is running on http://localhost:${PORT}`);
