@@ -6,17 +6,17 @@ const swaggerUi = require('swagger-ui-express');
 require('dotenv').config();
 
 const app = express();
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
+// 👉 DNS fix
+const dns = require('dns');
+dns.setServers(['1.1.1.1']);
+
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ Connected to MongoDB Atlas (Product Service)'))
     .catch((err) => console.error('❌ Database connection error:', err));
 
-// Product Model (Schema)
 const productSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: { type: String, required: true },
@@ -28,7 +28,7 @@ const productSchema = new mongoose.Schema({
 
 const Product = mongoose.model('Product', productSchema);
 
-// --- Swagger Configuration ---
+// --- 100% Error-Free Swagger Configuration ---
 const swaggerOptions = {
     swaggerDefinition: {
         openapi: '3.0.0',
@@ -37,42 +37,45 @@ const swaggerOptions = {
             version: '1.0.0',
             description: 'API for managing SwiftCart products',
         },
-        servers: [{ url: 'http://localhost:8002' }, { url: 'http://localhost:8000/products' }],
+        servers: [{ url: 'http://localhost:8002' }, { url: 'http://localhost:8000' }],
+        paths: {
+            '/products': {
+                post: {
+                    summary: 'Add a new product',
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        name: { type: 'string' },
+                                        description: { type: 'string' },
+                                        price: { type: 'number' },
+                                        category: { type: 'string' },
+                                        stock: { type: 'number' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: { '201': { description: 'Product added successfully' } }
+                },
+                get: {
+                    summary: 'Get all products',
+                    responses: { '200': { description: 'A list of products' } }
+                }
+            }
+        }
     },
-    apis: ['./index.js'],
+    apis: [], 
 };
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use(['/api-docs', '/products/api-docs'], swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// --- API Endpoints ---
+// --- API Endpoints (Original Routes) ---
 
-/**
- * @openapi
- * /products:
- *   post:
- *     summary: Add a new product
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *               category:
- *                 type: string
- *               stock:
- *                 type: number
- *     responses:
- *       201:
- *         description: Product added successfully
- */
 app.post('/products', async (req, res) => {
     try {
         const newProduct = new Product(req.body);
@@ -83,15 +86,6 @@ app.post('/products', async (req, res) => {
     }
 });
 
-/**
- * @openapi
- * /products:
- *   get:
- *     summary: Get all products
- *     responses:
- *       200:
- *         description: A list of products
- */
 app.get('/products', async (req, res) => {
     try {
         const products = await Product.find();
@@ -101,12 +95,8 @@ app.get('/products', async (req, res) => {
     }
 });
 
-// Health check
-app.get('/', (req, res) => {
-    res.send('Product Microservice is online and healthy.');
-});
+app.get('/', (req, res) => res.send('Product Microservice is online and healthy.'));
 
-// Port Configuration
 const PORT = 8002;
 app.listen(PORT, () => {
     console.log(`🚀 Product Service is running on http://localhost:${PORT}`);
