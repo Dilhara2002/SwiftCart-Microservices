@@ -20,8 +20,16 @@ mongoose.connect(process.env.MONGO_URI)
 
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    email: {  type: String, 
+    required: true, 
+    unique: true,
+    validate: {
+        validator: function (v) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        },
+        message: props => `${props.value} is not a valid email address!`
+    } },
+    password: {  type: String, required: true},
     role: { type: String, default: 'Customer' },
     createdAt: { type: Date, default: Date.now }
 });
