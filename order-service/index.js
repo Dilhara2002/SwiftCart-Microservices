@@ -11,8 +11,8 @@ app.use(cors());
 app.use(express.json());
 
 // 👉 DNS fix
-const dns = require('dns');
-dns.setServers(['1.1.1.1']);
+// const dns = require('dns');
+// dns.setServers(['1.1.1.1']);
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ Connected to MongoDB Atlas (Order Service)'))
@@ -42,7 +42,7 @@ const swaggerOptions = {
         },
         servers: [{ url: 'http://localhost:8003' }, { url: 'http://localhost:8000' }],
         paths: {
-            '/orders': {
+            '/add-order': { // Endpoint name changed here
                 post: {
                     summary: 'Place a new order',
                     requestBody: {
@@ -72,7 +72,9 @@ const swaggerOptions = {
                     responses: {
                         '201': { description: 'Order created successfully' }
                     }
-                },
+                }
+            },
+            '/get-orders': { // Endpoint name changed here
                 get: {
                     summary: 'Retrieve all orders',
                     responses: {
@@ -90,7 +92,8 @@ app.use(['/api-docs', '/orders/api-docs'], swaggerUi.serve, swaggerUi.setup(swag
 
 // --- API Endpoints ---
 
-app.post('/orders', async (req, res) => {
+// Changed from /orders to /add-order
+app.post('/add-order', async (req, res) => {
     try {
         const newOrder = new Order(req.body);
         const savedOrder = await newOrder.save();
@@ -103,7 +106,8 @@ app.post('/orders', async (req, res) => {
     }
 });
 
-app.get('/orders', async (req, res) => {
+// Changed from /orders to /get-orders
+app.get('/get-orders', async (req, res) => {
     try {
         const orders = await Order.find();
         res.status(200).json(orders);

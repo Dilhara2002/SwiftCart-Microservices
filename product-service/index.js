@@ -10,20 +10,48 @@ app.use(cors());
 app.use(express.json());
 
 // 👉 DNS fix
-const dns = require('dns');
-dns.setServers(['1.1.1.1']);
+// const dns = require('dns');
+// dns.setServers(['1.1.1.1']);
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ Connected to MongoDB Atlas (Product Service)'))
     .catch((err) => console.error('❌ Database connection error:', err));
 
 const productSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    description: { type: String, required: true },
-    price: { type: Number, required: true },
-    category: { type: String, required: true },
-    stock: { type: Number, default: 0 },
-    createdAt: { type: Date, default: Date.now }
+    name: { 
+        type: String, 
+        required: [true, 'Product name is required'],
+        trim: true, 
+        minlength: [3, 'Product name must be at least 3 characters long'],
+        maxlength: [100, 'Product name cannot exceed 100 characters']
+    },
+    description: { 
+        type: String, 
+        required: true 
+    },
+    price: { 
+        type: Number, 
+        required: [true, 'Price is required'],
+        min: [0, 'Price cannot be a negative value']
+    }, 
+    category: { 
+        type: String, 
+        required: true,
+        trim: true 
+    },
+    stock: { 
+        type: Number, 
+        required: [true, 'Stock is required'],
+        min: [0, 'Stock cannot be negative'], 
+        validate: {
+            validator: Number.isInteger, 
+            message: 'Stock must be an integer (cannot have decimals)'
+        }
+    },
+    createdAt: { 
+        type: Date, 
+        default: Date.now 
+    }
 });
 
 const Product = mongoose.model('Product', productSchema);
@@ -39,7 +67,7 @@ const swaggerOptions = {
         },
         servers: [{ url: 'http://localhost:8002' }, { url: 'http://localhost:8000' }],
         paths: {
-            '/products': {
+            '/products/add-product': {
                 post: {
                     summary: 'Add a new product',
                     requestBody: {
@@ -61,12 +89,15 @@ const swaggerOptions = {
                     },
                     responses: { '201': { description: 'Product added successfully' } }
                 },
-                get: {
+                
+            },
+            '/products': {
+            get: {
                     summary: 'Get all products',
                     responses: { '200': { description: 'A list of products' } }
                 }
-            }
         }
+    }
     },
     apis: [], 
 };
@@ -76,7 +107,7 @@ app.use(['/api-docs', '/products/api-docs'], swaggerUi.serve, swaggerUi.setup(sw
 
 // --- API Endpoints (Original Routes) ---
 
-app.post('/products', async (req, res) => {
+app.post('/products/add-product', async (req, res) => {
     try {
         const newProduct = new Product(req.body);
         await newProduct.save();
