@@ -10,8 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 // 👉 DNS fix
-const dns = require('dns');
-dns.setServers(['1.1.1.1']);
+// const dns = require('dns');
+// dns.setServers(['1.1.1.1']);
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ Connected to MongoDB Atlas (Inventory Service)'))
@@ -37,14 +37,16 @@ const swaggerOptions = {
         },
         servers: [{ url: 'http://localhost:8004' }, { url: 'http://localhost:8000' }],
         paths: {
-            '/inventory/{productId}': {
+            // Changed from /inventory/{productId} to /get-stock/{productId}
+            '/get-stock/{productId}': {
                 get: {
                     summary: 'Get stock level for a specific product',
                     parameters: [{ in: 'path', name: 'productId', required: true, schema: { type: 'string' } }],
                     responses: { '200': { description: 'Success' }, '404': { description: 'Not found' } }
                 }
             },
-            '/inventory/update': {
+            // Changed from /inventory/update to /update-stock
+            '/update-stock': {
                 put: {
                     summary: 'Update stock quantity',
                     requestBody: {
@@ -72,9 +74,10 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use(['/api-docs', '/inventory/api-docs'], swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// --- API Endpoints (Original Routes) ---
+// --- API Endpoints  ---
 
-app.get('/inventory/:productId', async (req, res) => {
+// Updated to /get-stock/:productId
+app.get('/get-stock/:productId', async (req, res) => {
     try {
         const item = await Inventory.findOne({ productId: req.params.productId });
         if (item) res.status(200).json(item);
@@ -84,7 +87,8 @@ app.get('/inventory/:productId', async (req, res) => {
     }
 });
 
-app.put('/inventory/update', async (req, res) => {
+// Updated to /update-stock
+app.put('/update-stock', async (req, res) => {
     const { productId, quantityChange } = req.body;
     try {
         const item = await Inventory.findOne({ productId });
